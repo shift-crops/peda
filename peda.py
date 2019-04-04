@@ -4752,6 +4752,20 @@ class PEDACmd(object):
                     break
             return
 
+        regs = peda.getregs()
+        regref = dict()
+        for r, v in regs.items():
+            if v < address or v > address + count*step:
+               continue
+            if v in regref:
+                regref[v] += [r]
+            else:
+                regref[v] = [r]
+
+        maxregs = 0
+        for r in regref.values():
+            maxregs = max(maxregs, len(r))
+
         result = []
         for i in range(count):
             value = address + i*step
@@ -4762,7 +4776,15 @@ class PEDACmd(object):
         idx = 0
         text = ""
         for chain in result:
+            addr = int(chain[0][0], 16)
+            remain = maxregs
+
             text += "%04d| " % (idx)
+            if addr in regref:
+                for r in regref[addr]:
+                    text += "%3s " % r
+                remain -= len(regref[addr])
+            text += ' '*4*remain
             text += format_reference_chain(chain)
             text += "\n"
             idx += step
